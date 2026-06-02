@@ -1,4 +1,11 @@
 # advisor.py
+import groq
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+api_key = os.environ.get("GROQ_API_KEY")
+
 
 class Student:
     # The blueprint for a student object.
@@ -28,6 +35,34 @@ def build_prompt(student):
     return message
 
 
+def get_recommendations(student):
+    # Build the prompt (the message we send to Groq)
+    # using the student's info
+    prompt = build_prompt(student)
+
+    # Create a client (open a connection to Groq)
+    # using our secret API key as identification
+    client = groq.Groq(api_key=api_key)
+
+    # Send the prompt to Groq as a message and
+    # store the response it sends back
+    # model is which AI we're using on Groq
+    # messages is a list with one item — our prompt
+    # role "user" means this is coming from the user
+    # content is the actual text we're sending
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    # Pull just the text out of the response object
+    # (the response comes back with a lot of extra
+    # info we don't need — this grabs just the message)
+    return response.choices[0].message.content
+
+
 # Prompting the user and creating a real student object
 user_person = Student(
     input("Enter your name: "),
@@ -36,7 +71,6 @@ user_person = Student(
     int(input("Enter total credits completed: ")),
     input("Enter courses taken (example: CMSC131, CMSC132): ")
 )
-
-# Test print to confirm the object was created correctly
-print(user_person.name, user_person.major, user_person.school_name,
-      user_person.courses, user_person.total)
+recommendations = get_recommendations(user_person)
+print("\nYour recommended courses:")
+print(recommendations)
